@@ -1,8 +1,12 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:geministate/services/http_service.dart';
 
 import '../models/gemini_talk_model.dart';
 import '../models/message_model.dart';
+import '../services/log_service.dart';
+import '../services/utils_service.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -14,6 +18,21 @@ class HomePage extends StatefulWidget {
 class _HomePageState extends State<HomePage> {
   TextEditingController textController = TextEditingController();
   List<MessageModel> messages = [];
+  String? pickedImage64;
+
+  void pickImageFromGallery() async {
+    var result = await Utils.pickAndConvertImage();
+    LogService.i(result);
+    setState(() {
+      pickedImage64 = result;
+    });
+  }
+
+  void removePickedImage() async {
+    setState(() {
+      pickedImage64 = null;
+    });
+  }
 
   void askToGemini() {
     String message = textController.text.toString().trim();
@@ -21,17 +40,34 @@ class _HomePageState extends State<HomePage> {
       return;
     }
 
-    MessageModel mine = MessageModel(isMine: true, message: message);
-    updateMessages(mine);
-
-    // API Request
-    apiTextOnly(message);
+    if (pickedImage64 != null) {
+      MessageModel mine =
+          MessageModel(isMine: true, message: message, base64: pickedImage64);
+      updateMessages(mine);
+      apiTextAndImage(message, pickedImage64!);
+    } else {
+      MessageModel mine = MessageModel(isMine: true, message: message);
+      updateMessages(mine);
+      apiTextOnly(message);
+    }
 
     textController.clear();
+    removePickedImage();
   }
 
-  apiTextOnly(String message)async{
-    var response = await Network.POST(Network.API_GEMINI_TALK, Network.paramsTextOnly(message));
+  apiTextOnly(String message) async {
+    var response = await Network.POST(
+        Network.API_GEMINI_TALK, Network.paramsTextOnly(message));
+    var geminiTalk = Network.parseGeminiTalk(response!);
+    var result = geminiTalk.candidates[0].content.parts[0].text;
+
+    MessageModel gemini = MessageModel(isMine: false, message: result);
+    updateMessages(gemini);
+  }
+
+  apiTextAndImage(String message, String pickedImage64) async {
+    var response = await Network.POST(Network.API_GEMINI_TALK,
+        Network.paramsTextAndImage(message, pickedImage64));
     var geminiTalk = Network.parseGeminiTalk(response!);
     var result = geminiTalk.candidates[0].content.parts[0].text;
 
@@ -86,9 +122,49 @@ class _HomePageState extends State<HomePage> {
                   borderRadius: BorderRadius.circular(25),
                   border: Border.all(color: Colors.grey, width: 1.5)),
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Picked Image
 
+                  pickedImage64 != null
+                      ? Stack(
+                          children: [
+                            Container(
+                              margin: EdgeInsets.only(top: 10),
+                              width: 70,
+                              height: 70,
+                              decoration: BoxDecoration(
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: Colors.white)),
+                              child: ClipRRect(
+                                borderRadius: BorderRadius.circular(10),
+                                child: Image.memory(
+                                  base64Decode(pickedImage64!),
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            Container(
+                                margin: EdgeInsets.only(top: 10),
+                                width: 70,
+                                height: 70,
+                                decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(10),
+                                    border: Border.all(color: Colors.white)),
+                                child: Center(
+                                  child: IconButton(
+                                    onPressed: () {
+                                      removePickedImage();
+                                    },
+                                    icon: Icon(
+                                      Icons.clear,
+                                      color: Colors.black,
+                                    ),
+                                  ),
+                                )),
+                          ],
+                        )
+                      : SizedBox.shrink(),
                   Row(
                     children: [
                       Expanded(
@@ -104,7 +180,9 @@ class _HomePageState extends State<HomePage> {
                         ),
                       ),
                       IconButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          pickImageFromGallery();
+                        },
                         icon: Icon(
                           Icons.attach_file,
                           color: Colors.grey,
@@ -184,12 +262,22 @@ class _HomePageState extends State<HomePage> {
               )),
           child: Expanded(
             child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   message.message!,
                   style: const TextStyle(
                       color: Color.fromRGBO(173, 173, 176, 1), fontSize: 17),
                 ),
+                message.base64 != null && message.base64!.isNotEmpty
+                    ? Container(
+                        margin: EdgeInsets.only(top: 16, bottom: 6),
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: Image.memory(base64Decode(message.base64!)),
+                        ),
+                      )
+                    : SizedBox.shrink(),
               ],
             ),
           ),
