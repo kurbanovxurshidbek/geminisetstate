@@ -7,6 +7,8 @@ import '../models/gemini_talk_model.dart';
 import '../models/message_model.dart';
 import '../services/log_service.dart';
 import '../services/utils_service.dart';
+import '../widgets/item_of_gemini_message.dart';
+import '../widgets/item_of_user_message.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -208,81 +210,4 @@ class _HomePageState extends State<HomePage> {
     );
   }
 
-  Widget itemOfGeminiMessage(MessageModel message) {
-    return Container(
-      width: double.infinity,
-      padding: EdgeInsets.all(16),
-      margin: EdgeInsets.only(top: 15, bottom: 15),
-      child: Container(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Container(
-                  width: 30,
-                  child: Image.asset('assets/images/gemini_icon.png'),
-                ),
-                Icon(
-                  Icons.volume_up,
-                  color: Colors.white70,
-                )
-              ],
-            ),
-            Container(
-              margin: EdgeInsets.only(top: 15),
-              child: Text(
-                message.message!,
-                style: TextStyle(
-                    color: Color.fromRGBO(173, 173, 176, 1), fontSize: 17),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget itemOfUserMessage(MessageModel message) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        Container(
-          padding:
-              const EdgeInsets.only(top: 10, bottom: 10, left: 16, right: 16),
-          constraints: const BoxConstraints(maxWidth: 300),
-          decoration: BoxDecoration(
-              color: Color.fromRGBO(38, 39, 42, 1),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(25),
-                topRight: Radius.circular(4),
-                bottomLeft: Radius.circular(25),
-                bottomRight: Radius.circular(25),
-              )),
-          child: Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  message.message!,
-                  style: const TextStyle(
-                      color: Color.fromRGBO(173, 173, 176, 1), fontSize: 17),
-                ),
-                message.base64 != null && message.base64!.isNotEmpty
-                    ? Container(
-                        margin: EdgeInsets.only(top: 16, bottom: 6),
-                        child: ClipRRect(
-                          borderRadius: BorderRadius.circular(10),
-                          child: Image.memory(base64Decode(message.base64!)),
-                        ),
-                      )
-                    : SizedBox.shrink(),
-              ],
-            ),
-          ),
-        ),
-      ],
-    );
-  }
 }
