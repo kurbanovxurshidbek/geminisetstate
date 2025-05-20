@@ -12,6 +12,9 @@ dependencies:
 
   cupertino_icons: ^1.0.8
 
+  # GetX
+  get: ^4.6.6
+
   # Networking
   http: ^0.13.3
   http_interceptor: ^1.0.2
